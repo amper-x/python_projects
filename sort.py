@@ -62,75 +62,79 @@ all_files = {
     }
 
 
+def sort_file(filename: str, path: str):
+    """
+        Перевіряємо чи є поточний елемент файлом. Якщо так - створюємо окрему змінну для розширення цього файлу.
+        Якщо розширення не існує - пропускаємо. Шукаємо розширення серед списку відомих нам розширень.
+
+        Якщо це архів - переіменовуємо, розпаковуємо в новостворену папку і видаляємо оригінал.
+        Додаємо до словника.
+
+        Якщо відоме розширення - переіменовуємо, додаємо до словника інформацію про файл і сортуємо в відповідну
+        директорію.
+
+        Якщо розширення невідоме - створюємо новий елемент словника для утримання інформації про файл.
+        Файл переіменовуємо, але не сортуємо.
+                """
+    tmp = re.findall(r"\.\w{2,}", filename)
+    if not tmp:
+        return
+    tmp = tmp[-1]
+    if tmp.lower() in ['.png', '.jpg', '.jpeg', '.svg']:
+        abs_path, renamed = rename_file(path, filename, tmp)
+        all_files["images"][tmp.lower()].append(renamed)
+        shutil.move(abs_path, images)
+    elif tmp.lower() in [".avi", ".mp4", ".mov", ".mkv"]:
+        abs_path, renamed = rename_file(path, filename, tmp)
+        all_files["video"][tmp.lower()].append(filename)
+        shutil.move(abs_path, video)
+    elif tmp.lower() in ['.doc', '.docx', '.txt', '.pdf', '.xlsx', '.pptx']:
+        abs_path, renamed = rename_file(path, filename, tmp)
+        all_files["documents"][tmp.lower()].append(filename)
+        shutil.move(abs_path, documents)
+    elif tmp.lower() in ['.mp3', '.ogg', '.wav', '.amr']:
+        abs_path, renamed = rename_file(path, filename, tmp)
+        all_files["audio"][tmp.lower()].append(filename)
+        shutil.move(abs_path, audio)
+    elif tmp.lower() in ['.zip', '.gz', '.tar']:
+        abs_path, renamed = rename_file(path, filename, tmp)
+        all_files["archives"][tmp.lower()].append(renamed)
+        new_dir = os.path.join(archives, renamed.removesuffix(tmp))
+        os.mkdir(new_dir)
+        shutil.unpack_archive(abs_path, new_dir, tmp[1:])
+        os.remove(abs_path)
+    elif tmp in all_files["other"].keys():
+        abs_path, renamed = rename_file(path, filename, tmp)
+        all_files["other"][tmp].append(renamed)
+    else:
+        abs_path, renamed = rename_file(path, filename, tmp)
+        all_files["other"][tmp] = [renamed, ]
+
+
 def sort_dir(path: str):
     """
-    Функція для сортування файлів у директорії. Приймає шлях до цієї самої директорії.
-    Викликає сама себе.
+        Функція для сортування файлів у директорії. Приймає шлях до цієї самої директорії.
+        Викликає сама себе.
     """
     for filename in os.listdir(path):
         # Ітеруємо по всіх елементах директорії (файлам і папкам)
         if filename in all_files.keys():
             # Перевіряємо чи є поточна папка серед папок, в які проводимо сортування. Пропусаємо, якщо так.
             continue
-        fh = os.path.join(path, filename)  # Створюємо повний шлях до поточного елемента
+        abs_path = os.path.join(path, filename)  # Створюємо повний шлях до поточного елемента
 
-        if os.path.isdir(fh):
+        if os.path.isdir(abs_path):
             # Якщо дирокторія пуста - видаляємо. Якщо ні - переіменовуємо і рекурсивно викликаємо знову.
-            if not len(os.listdir(fh)):
-                os.rmdir(fh)
+            if not os.listdir(abs_path):
+                os.rmdir(abs_path)
             else:
                 renamed = normalize(filename)
                 renamed = os.path.join(path, renamed)
-                os.rename(fh, renamed)
+                os.rename(abs_path, renamed)
                 sort_dir(renamed)
 
-        elif os.path.isfile(fh):
-            """
-                Перевіряємо чи є поточний елемент файлом. Якщо так - створюємо окрему змінну для розширення цього файлу.
-                Якщо розширення не існує - пропускаємо. Шукаємо розширення серед списку відомих нам розширень.
-            
-                Якщо це архів - переіменовуємо, розпаковуємо в новостворену папку і видаляємо оригінал.
-                Додаємо до словника.
-            
-                Якщо відоме розширення - переіменовуємо, додаємо до словника інформацію про файл і сортуємо в відповідну
-                директорію.
-            
-                Якщо розширення невідоме - створюємо новий елемент словника для утримання інформації про файл.
-                Файл переіменовуємо, але не сортуємо.
-            """
-            tmp = re.findall(r"\.\w{2,}", filename)
-            if not tmp:
-                continue
-            tmp = tmp[-1]
-            if tmp.lower() in ['.png', '.jpg', '.jpeg', '.svg']:
-                fh, renamed = rename_file(path, filename, tmp)
-                all_files["images"][tmp.lower()].append(renamed)
-                shutil.move(fh, images)
-            elif tmp.lower() in [".avi", ".mp4", ".mov", ".mkv"]:
-                fh, renamed = rename_file(path, filename, tmp)
-                all_files["video"][tmp.lower()].append(filename)
-                shutil.move(fh, video)
-            elif tmp.lower() in ['.doc', '.docx', '.txt', '.pdf', '.xlsx', '.pptx']:
-                fh, renamed = rename_file(path, filename, tmp)
-                all_files["documents"][tmp.lower()].append(filename)
-                shutil.move(fh, documents)
-            elif tmp.lower() in ['.mp3', '.ogg', '.wav', '.amr']:
-                fh, renamed = rename_file(path, filename, tmp)
-                all_files["audio"][tmp.lower()].append(filename)
-                shutil.move(fh, audio)
-            elif tmp.lower() in ['.zip', '.gz', '.tar']:
-                fh, renamed = rename_file(path, filename, tmp)
-                all_files["archives"][tmp.lower()].append(renamed)
-                new_dir = os.path.join(archives, renamed.removesuffix(tmp))
-                os.mkdir(new_dir)
-                shutil.unpack_archive(fh, new_dir, tmp[1:])
-                os.remove(fh)
-            elif tmp in all_files["other"].keys():
-                fh, renamed = rename_file(path, filename, tmp)
-                all_files["other"][tmp].append(renamed)
-            else:
-                fh, renamed = rename_file(path, filename, tmp)
-                all_files["other"][tmp] = [renamed, ]
+        elif os.path.isfile(abs_path):
+            sort_file(filename, path)
 
     # Кінець роботи. Функція нічого не повертає.
 
@@ -165,6 +169,13 @@ def print_results():
 
 main_path = fr"{sys.argv[1]}"  # Виклик всіх функцій, що виконують програму. Запускається через командну строку
 images, video, documents, audio, archives = ultimate_paths(main_path)
-sort_dir(main_path)
-remove_empty_dir(main_path)
-print_results()
+
+
+def startup():
+    sort_dir(main_path)
+    remove_empty_dir(main_path)
+    print_results()
+
+
+if __name__ == "__main__":
+    startup()
