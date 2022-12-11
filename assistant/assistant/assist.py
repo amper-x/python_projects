@@ -10,70 +10,53 @@ import os
 
 
 def input_error(func):
-    """
-    Декоратор, що обробляє можливі помилки, які можуть завчасно зупинити роботу програми
-    """
-    def inner(contacts: dict, command: list) -> bool:
-        if func.__name__ == "end_script":
-            try:
-                if func(contacts, command) is False:
-                    raise IndexError
-            except IndexError:
-                print("Leaving so soon? Type in: 'exit', 'good bye' or 'close'.")
-            else:
-                return True
-        elif func.__name__ == "show_all":
-            try:
-                if func(contacts, command) is True:
-                    raise IndexError
-            except IndexError:
-                print("Show what, exactly?")
-        elif func.__name__ == "change_contact":
-            try:
-                if func(contacts, command) is False:
-                    raise KeyError
-            except KeyError:
-                print("Insufficient data provided or contact doesn't exist.")
-        elif func.__name__ == "add_contact":
-            try:
-                if func(contacts, command) is False:
-                    raise KeyError
-            except KeyError:
-                print("Insufficient data provided or contact already exists.")
-        elif func.__name__ == "get_phone":
-            try:
-                func(contacts, command)
-            except KeyError:
-                print("This person is not on your contact list.")
-            except IndexError:
-                print("Enter a name of the person whose number you require.")
-        else:
-            func(contacts, command)
-        return False
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except KeyError:
+            print('Name not on your contact list.')
+        except ValueError as exception:
+            print(f"{exception.args[0]}")
+        except IndexError:
+            print('Insufficient data.')
+        except TypeError:
+            print('Unknown command.')
     return inner
 
 
 @input_error
-def greet_again(contacts: dict, command: list) -> None:  # Повторне вітання
+def greet_again(command: list, contacts: dict) -> None:  # Повторне вітання
     print("Yes, hello again...")
 
 
 @input_error
-def change_contact(contacts: dict, command: list) -> bool:  # Змінити номер контакту. Сповістити якщо такого не існує
+def change_contact(command: list, contacts: dict) -> None:  # Змінити номер контакту. Сповістити якщо такого не існує
     name = command[1:-1]
     for count, value in enumerate(name):
         name[count] = value.lower().capitalize()
     name = " ".join(name)
-    if not name or not contacts.get(name, None) or len(command) < 3:
-        return False
+    if not len(name) or not command[-1].isdecimal():
+        raise ValueError("Please enter the name and the phone.")
+    elif name not in contacts:
+        raise ValueError("This contact doesn't exist.")
     contacts[name] = command[-1]
-    return True
 
 
 @input_error
-def get_phone(contacts: dict, command: list) -> None:  # Вивести на екран номер введеного контакту
-    if command[1]:
-        pass
+def add_contact(command: list, contacts: dict) -> None:  # Додати новий контакт. Сповістити якщо вже існує
+    name = command[1:-1]
+    for count, value in enumerate(name):
+        name[count] = value.lower().capitalize()
+    name = " ".join(name)
+    if not len(name) or not command[-1].isdecimal():
+        raise ValueError("Please enter the name and the phone.")
+    elif name in contacts:
+        raise ValueError("This contact already exists.")
+    contacts[name] = command[-1]
+
+
+@input_error
+def get_phone(command: list, contacts: dict) -> None:  # Вивести на екран номер введеного контакту
     name = command[1:]
     for count, value in enumerate(name):
         name[count] = value.lower().capitalize()
@@ -82,43 +65,28 @@ def get_phone(contacts: dict, command: list) -> None:  # Вивести на е�
 
 
 @input_error
-def show_all(contacts: dict, command: list) -> bool:  # Показати всі записані контакти і їх номери
+def show_all(command: list, contacts: dict) -> None:  # Показати всі записані контакти і їх номери
     if command[1].lower() == "all" and len(command) == 2:
         for name, phone in contacts.items():
             print(f"{name}: {phone}")
-        return False
-    else:
-        return True
 
 
 @input_error
-def end_script(contacts: dict, command: list) -> bool:  # Завершити роботу додатку
+def end_script(command: list, contacts: dict) -> bool:  # Завершити роботу додатку
     if len(command) == 1 and command[0] != "good":
         print("Goodbye!")
-        return True
     elif len(command) == 2 and command[1].lower() == "bye":
         print("Goodbye!")
-        return True
-    return False
+    else:
+        raise ValueError("Unknown command.")
+    return True
 
 
-@input_error
-def nothing(contacts: dict, command: list) -> None:  # При введенні невідомої команди
+def nothing(command: list, contacts: dict) -> None:
     print("Unknown command.")
 
 
 @input_error
-def add_contact(contacts: dict, command: list) -> bool:  # Додати новий контакт. Сповістити якщо вже існує
-    name = command[1:-1]
-    for count, value in enumerate(name):
-        name[count] = value.lower().capitalize()
-    name = " ".join(name)
-    if not name or contacts.get(name, None) or len(command) < 3:
-        return False
-    contacts[name] = command[-1]
-    return True
-
-
 def parser(command: list):  # Парсер команд. Видає відповідну хендлер-функцію
     execution = {
         "add": add_contact,
@@ -147,7 +115,7 @@ def main():  # Основна логіка програми
         if not command:
             continue
         command = command.split()
-        if parser(command)(contacts, command):
+        if parser(command)(command, contacts):
             break
     with open(storage_path, "w") as fh:  # Зберігає словник з даними у файл. Збереження відбувається в останню чергу
         j = json.dumps(contacts)
