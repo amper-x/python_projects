@@ -8,3 +8,6 @@ clean_folder/clean_folder.egg-info/SOURCES.txt
 clean_folder/build/lib/clean_folder/sort.py
 assistant/assistant/dict.json
 mod1/
+assistant/assistant/store.bin
+assist.py
+assistant/assistant/__pycache__/classes.cpython-310.pyc

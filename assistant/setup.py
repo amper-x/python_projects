@@ -8,7 +8,7 @@ setup(name='assistant',
       author_email='wmaksym57@gmail.com',
       license='I made it up',
       packages=['assist'],
-      entry_points={'console_scripts': ['hello = assistant.assist:main',
-                                        'Hello = assistant.assist:main',
-                                        'HELLO = assistant.assist:main']}
+      entry_points={'console_scripts': ['hello = assistant.assist_2:main',
+                                        'Hello = assistant.assist_2:main',
+                                        'HELLO = assistant.assist_2:main']}
       )

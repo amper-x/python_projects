@@ -6,13 +6,6 @@ import re
 class AddressBook(UserDict):
     """
     Об'єкт, що ітерує за атрибутами іншого об'єкта та створює з них словник.
-
-    def add_record(self, record):
-        for a in dir(record):
-            if not a.startswith("__") and not callable(getattr(record, a)):
-                tmp = f"self.data[a] = record.{a}"
-                exec(tmp)
-
     """
     def add_record(self, name):
         self.data[name] = Record(name)
